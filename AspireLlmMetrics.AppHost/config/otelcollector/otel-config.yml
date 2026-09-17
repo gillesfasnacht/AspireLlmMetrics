@@ -1,0 +1,45 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+ 
+exporters:
+  # Envoi vers le Dashboard Aspire (port par défaut 4317)
+  otlp_grpc/aspire:
+    endpoint: ${env:ASPIRE_ENDPOINT}
+    headers:
+      x-otlp-api-key: ${env:ASPIRE_API_KEY}
+    tls:
+        insecure: ${env:ASPIRE_INSECURE}
+        insecure_skip_verify: true # Required in local development because cert is localhost and the endpoint is host.docker.internal
+  
+  # Le collecteur écoute sur ce port pour donner les traces à Tempo
+  otlp_http/traces:
+    endpoint: "http://tempo:4318"
+
+  # Le collecteur écoute sur ce port pour donner les logs à Loki
+  otlp_http/logs:
+    endpoint: "http://loki:3100/otlp"
+
+  # Le collecteur écoute sur ce port pour donner les metrics à Prometheus
+  otlp_http/metrics:
+    endpoint: "http://prometheus:9090/api/v1/otlp"
+
+  # Exemple d'export vers un outil tiers (ex: Console pour debug) / ajouter "debug" dans la liste des exporters du pipeline pour l'activer
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [otlp_grpc/aspire, otlp_http/traces]
+    metrics:
+      receivers: [otlp]
+      exporters: [otlp_grpc/aspire, otlp_http/metrics]
+    logs:
+      receivers: [otlp]
+      exporters: [otlp_grpc/aspire, otlp_http/logs]

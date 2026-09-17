@@ -1,0 +1,300 @@
+﻿@page "/chat"
+
+@using AspireLlmMetrics.Web.Services
+@using Microsoft.Extensions.AI
+@using System.Text.Json
+@inject AgentChatService AgentChatService
+
+<PageTitle>AI Developer</PageTitle>
+
+<h1>AI Developer</h1>
+
+<div class="chat-container">
+
+    @foreach (var message in messages)
+    {
+        <div class="message">
+            <strong>@message.Role</strong>
+
+            <div>
+                @message.Content
+            </div>
+        </div>
+    }
+
+</div>
+
+<div class="chat-input">
+
+    <textarea @bind="prompt"
+              @bind:event="oninput"
+              placeholder="Votre message..."
+              disabled="@isRunning"
+              rows="5" cols="100">
+    </textarea>
+
+    <button @onclick="SendAsync"
+            disabled="@(!CanSend)">
+        Envoyer
+    </button>
+
+</div>
+
+@if (isRunning)
+{
+    <p>Réponse en cours...</p>
+}
+
+@if (pendingApproval is not null)
+{
+    var functionCall =
+        pendingApproval.ToolCall
+            as FunctionCallContent;
+
+    <hr />
+
+    <div class="approval">
+        <h3>Approbation requise</h3>
+
+        @if (functionCall is not null)
+        {
+            <p>
+                <strong>Outil :</strong>
+                @functionCall.Name
+            </p>
+
+            <p>
+                L'agent souhaite effectuer cette opération :
+            </p>
+
+            <pre>@FormatArguments(functionCall)</pre>
+        }
+
+        <button @onclick="RejectAsync"
+                disabled="@isRunning">
+            Refuser
+        </button>
+
+        <button @onclick="ApproveAsync"
+                disabled="@isRunning">
+            Approuver
+        </button>
+    </div>
+}
+
+@code {
+    private string prompt = string.Empty;
+    private bool isRunning;
+    private ToolApprovalRequestContent? pendingApproval;
+
+    private readonly List<ChatMessageViewModel> messages = [];
+
+    private bool CanSend =>
+        !isRunning &&
+        !string.IsNullOrWhiteSpace(prompt);
+
+    private async Task SendAsync()
+    {
+        if (!CanSend)
+            return;
+
+        var userPrompt = prompt.Trim();
+
+        prompt = string.Empty;
+
+        messages.Add(
+            new ChatMessageViewModel(
+                "Vous",
+                userPrompt));
+
+        var assistantMessage =
+            new ChatMessageViewModel(
+                "Agent",
+                string.Empty);
+
+        messages.Add(assistantMessage);
+
+        isRunning = true;
+
+        try
+        {
+            await foreach (
+                var chatEvent in
+                AgentChatService.SendAsync(userPrompt))
+            {
+                switch (chatEvent)
+                {
+                    case AgentTextEvent textEvent:
+
+                        assistantMessage.Content += textEvent.Text;
+
+                        break;
+
+                    case AgentApprovalEvent approvalEvent:
+
+                        pendingApproval = approvalEvent.Request;
+
+                        break;
+                }
+
+                await InvokeAsync(
+                    StateHasChanged);
+            }
+        }
+        catch (Exception ex)
+        {
+            assistantMessage.Content =
+                $"Erreur : {ex.Message}";
+        }
+        finally
+        {
+            isRunning = false;
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private sealed class ChatMessageViewModel(
+        string role,
+        string content)
+    {
+        public string Role { get; } = role;
+
+        public string Content { get; set; } = content;
+    }
+
+    private static string FormatArguments(
+    FunctionCallContent call)
+    {
+        return JsonSerializer.Serialize(
+            call.Arguments,
+            new JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
+    }
+
+    private async Task ApproveAsync()
+    {
+        if (pendingApproval is null)
+        {
+            return;
+        }
+
+        var approval =
+            pendingApproval;
+
+        pendingApproval = null;
+
+        var assistantMessage =
+            new ChatMessageViewModel(
+                "Agent",
+                string.Empty);
+
+        messages.Add(
+            assistantMessage);
+
+        isRunning = true;
+
+        try
+        {
+            await foreach (
+                var chatEvent in
+                AgentChatService
+                    .RespondToApprovalAsync(
+                        approval,
+                        approved: true))
+            {
+                switch (chatEvent)
+                {
+                    case AgentTextEvent textEvent:
+
+                        assistantMessage.Content +=
+                            textEvent.Text;
+
+                        break;
+
+                    case AgentApprovalEvent approvalEvent:
+
+                        pendingApproval =
+                            approvalEvent.Request;
+
+                        break;
+                }
+
+                await InvokeAsync(
+                    StateHasChanged);
+            }
+        }
+        finally
+        {
+            isRunning = false;
+
+            await InvokeAsync(
+                StateHasChanged);
+        }
+    }
+
+    private async Task RejectAsync()
+    {
+        if (pendingApproval is null)
+        {
+            return;
+        }
+
+        var approval =
+            pendingApproval;
+
+        pendingApproval = null;
+
+        var assistantMessage =
+            new ChatMessageViewModel(
+                "Agent",
+                string.Empty);
+
+        messages.Add(
+            assistantMessage);
+
+        isRunning = true;
+
+        try
+        {
+            await foreach (
+                var chatEvent in
+                AgentChatService
+                    .RespondToApprovalAsync(
+                        approval,
+                        approved: false,
+                        reason:
+                            "L'utilisateur a refusé la création du fichier."))
+            {
+                switch (chatEvent)
+                {
+                    case AgentTextEvent textEvent:
+
+                        assistantMessage.Content +=
+                            textEvent.Text;
+
+                        break;
+
+                    case AgentApprovalEvent approvalEvent:
+
+                        pendingApproval =
+                            approvalEvent.Request;
+
+                        break;
+                }
+
+                await InvokeAsync(
+                    StateHasChanged);
+            }
+        }
+        finally
+        {
+            isRunning = false;
+
+            await InvokeAsync(
+                StateHasChanged);
+        }
+    }
+}

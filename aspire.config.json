@@ -1,0 +1,5 @@
+{
+  "appHost": {
+    "path": "AspireLlmMetrics.AppHost/AspireLlmMetrics.AppHost.csproj"
+  }
+}

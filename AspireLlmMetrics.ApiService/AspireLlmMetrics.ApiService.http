@@ -1,0 +1,22 @@
+@ApiService_HostAddress = http://localhost:5448
+
+### Test 1 - Question courte
+POST {{ApiService_HostAddress}}/chat/
+Content-Type: application/json
+{
+  "prompt": "Explique-moi OpenTelemetry en 3 phrases."
+}
+
+### Test 2 - Question moyenne
+POST {{ApiService_HostAddress}}/chat
+Content-Type: application/json
+{
+  "prompt": "Explique-moi OpenTelemetry et son intérêt pour mesurer les performances d'un LLM."
+}
+
+### Test 3 - Question longue
+POST {{ApiService_HostAddress}}/chat
+Content-Type: application/json
+{
+  "prompt": "Explique en détail comment mesurer les tokens en entrée, les tokens en sortie, la latence et le débit de génération avec Ollama et Gemma."
+}

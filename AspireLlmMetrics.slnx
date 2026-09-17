@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/Solution Items/" />
+  <Project Path="AspireLlmMetrics.ApiService/AspireLlmMetrics.ApiService.csproj" />
+  <Project Path="AspireLlmMetrics.AppHost/AspireLlmMetrics.AppHost.csproj" />
+  <Project Path="AspireLlmMetrics.ServiceDefaults/AspireLlmMetrics.ServiceDefaults.csproj" />
+</Solution>
