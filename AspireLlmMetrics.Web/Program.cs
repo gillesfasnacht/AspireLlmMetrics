@@ -16,7 +16,7 @@ builder.Services.AddHttpClient(
     client =>
     {
         client.BaseAddress =
-            new Uri("https://apiservice");
+            new Uri("https+http://apiservice");
     });
 
 builder.Services.AddScoped<AgentChatService>();

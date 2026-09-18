@@ -3,7 +3,10 @@ using AspireLlmMetrics.ApiService.AI.Ollama;
 using AspireLlmMetrics.ApiService.Chat;
 using AspireLlmMetrics.ApiService.Configuration;
 using AspireLlmMetrics.ApiService.Metrics;
+using AspireLlmMetrics.ApiService.Telemetry;
 using Microsoft.Agents.AI;
+using Microsoft.Agents.AI.Hosting.AGUI.AspNetCore;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.AI;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -25,14 +28,15 @@ builder.Services.AddOptions<LlmOptions>()
         "LLM:Endpoint doit être une URL valide.")
     .ValidateOnStart();
 
-// Récupération de la configuration LLM
-var llmOptions = builder.Configuration.GetSection("LLM")
-    .Get<LlmOptions>() ?? throw new InvalidOperationException("La configuration LLM est absente.");
-
-// Ollama / IChatClient
-var chatClient = OllamaClientFactory.Create(llmOptions);
-
-builder.Services.AddSingleton<IChatClient>(chatClient);
+// Le même client instrumenté sert les routes JSON et AG-UI.
+builder.Services.AddSingleton<IChatClient>(services =>
+{
+    var options = services.GetRequiredService<IOptions<LlmOptions>>().Value;
+    return new InstrumentedChatClient(
+        OllamaClientFactory.Create(options),
+        services.GetRequiredService<LlmMetrics>(),
+        options.Model);
+});
 builder.Services.AddSingleton<AIAgent>(serviceProvider =>
 {
     var client = serviceProvider.GetRequiredService<IChatClient>();
@@ -57,12 +61,19 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+app.MapAGUIServer("/agents/chat", app.Services.GetRequiredService<AIAgent>());
+
 // Chat POST route
 app.MapPost("/chat", async (
     ChatRequest request,
     ChatAgent agent,
     CancellationToken cancellationToken) =>
 {
+    if (string.IsNullOrWhiteSpace(request.Prompt))
+    {
+        return Results.BadRequest(new { error = "Le prompt ne doit pas être vide." });
+    }
+
     var response = await agent.ChatAsync(
         request.Prompt,
         cancellationToken);

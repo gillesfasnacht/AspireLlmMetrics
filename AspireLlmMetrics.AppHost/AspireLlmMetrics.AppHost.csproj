@@ -1,4 +1,4 @@
-﻿<Project Sdk="Aspire.AppHost.Sdk/13.5.4">
+<Project Sdk="Aspire.AppHost.Sdk/13.5.4">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AspireLlmMetrics.ApiService\AspireLlmMetrics.ApiService.csproj" />
+    <ProjectReference Include="..\AspireLlmMetrics.Web\AspireLlmMetrics.Web.csproj" />
   </ItemGroup>
 
   <ItemGroup>

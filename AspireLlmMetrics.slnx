@@ -3,4 +3,6 @@
   <Project Path="AspireLlmMetrics.ApiService/AspireLlmMetrics.ApiService.csproj" />
   <Project Path="AspireLlmMetrics.AppHost/AspireLlmMetrics.AppHost.csproj" />
   <Project Path="AspireLlmMetrics.ServiceDefaults/AspireLlmMetrics.ServiceDefaults.csproj" />
+  <Project Path="AspireLlmMetrics.Tests/AspireLlmMetrics.Tests.csproj" />
+  <Project Path="AspireLlmMetrics.Web/AspireLlmMetrics.Web.csproj" />
 </Solution>

@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Diagnostics.Metrics;
 
 namespace AspireLlmMetrics.ApiService.Metrics
@@ -8,6 +8,8 @@ namespace AspireLlmMetrics.ApiService.Metrics
         public const string MeterName = "AspireLlmMetrics.Llm";
 
         private readonly Counter<long> _requests;
+        private readonly Counter<long> _successes;
+        private readonly Counter<long> _cancellations;
         private readonly Counter<long> _inputTokens;
         private readonly Counter<long> _outputTokens;
         private readonly Counter<long> _totalTokens;
@@ -28,7 +30,12 @@ namespace AspireLlmMetrics.ApiService.Metrics
 
             _requests = meter.CreateCounter<long>(
                 "llm.requests",
-                description: "Nombre de requêtes LLM.");
+                description: "Nombre de tentatives LLM, tous résultats confondus.");
+
+            _successes = meter.CreateCounter<long>("llm.successes",
+                description: "Nombre de requêtes LLM terminées avec succès.");
+            _cancellations = meter.CreateCounter<long>("llm.cancellations",
+                description: "Nombre de requêtes LLM annulées.");
 
             _inputTokens = meter.CreateCounter<long>(
                 "llm.tokens.input",
@@ -86,7 +93,10 @@ namespace AspireLlmMetrics.ApiService.Metrics
                 description: "Débit de tokens observé de bout en bout.");
         }
 
-        public void RecordRequest(
+        public void RecordAttempt(string model) =>
+            _requests.Add(1, new KeyValuePair<string, object?>("llm.model", model));
+
+        public void RecordSuccess(
             string model,
             long inputTokens,
             long outputTokens,
@@ -100,15 +110,13 @@ namespace AspireLlmMetrics.ApiService.Metrics
                 { "llm.model", model }
             };
 
-            _requests.Add(1, tags);
+            _successes.Add(1, tags);
 
             _inputTokens.Add(inputTokens, tags);
             _outputTokens.Add(outputTokens, tags);
             _totalTokens.Add(totalTokens, tags);
 
-            _requestDuration.Record(
-                durationMs / 1000.0,
-                tags);
+            RecordDuration(model, durationMs, "success");
 
             _endToEndTokensPerSecond.Record(
                 tokensPerSecond,
@@ -147,7 +155,19 @@ namespace AspireLlmMetrics.ApiService.Metrics
             }
         }
 
-        public void RecordError(string model)
+        public void RecordCancellation(string model, double durationMs)
+        {
+            _cancellations.Add(1, new KeyValuePair<string, object?>("llm.model", model));
+            RecordDuration(model, durationMs, "cancelled");
+        }
+
+        private void RecordDuration(string model, double durationMs, string outcome)
+        {
+            var tags = new TagList { { "llm.model", model }, { "llm.outcome", outcome } };
+            _requestDuration.Record(durationMs / 1000.0, tags);
+        }
+
+        public void RecordError(string model, double durationMs)
         {
             var tags = new TagList
             {
@@ -155,6 +175,7 @@ namespace AspireLlmMetrics.ApiService.Metrics
             };
 
             _errors.Add(1, tags);
+            RecordDuration(model, durationMs, "error");
         }
 
     }

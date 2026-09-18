@@ -1,13 +1,20 @@
-﻿namespace AspireLlmMetrics.ApiService.Metrics
+namespace AspireLlmMetrics.ApiService.Metrics
 {
     public sealed record OllamaMetrics(
-    long TotalDurationNs,
-    long LoadDurationNs,
-    long PromptEvalCount,
-    long PromptEvalDurationNs,
-    long EvalCount,
-    long EvalDurationNs)
+        long TotalDurationNs,
+        long LoadDurationNs,
+        long PromptEvalCount,
+        long PromptEvalDurationNs,
+        long EvalCount,
+        long EvalDurationNs)
     {
+        public static OllamaMetrics? FromRawRepresentation(object? raw) =>
+            raw is OllamaSharp.Models.Chat.ChatDoneResponseStream response
+                ? new(response.TotalDuration, response.LoadDuration,
+                    response.PromptEvalCount, response.PromptEvalDuration,
+                    response.EvalCount, response.EvalDuration)
+                : null;
+
         public double TotalDurationMs =>
             TotalDurationNs / 1_000_000.0;
 
