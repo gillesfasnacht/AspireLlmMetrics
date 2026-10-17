@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="AGUI.Client" Version="1.0.0" />
-    <PackageReference Include="Microsoft.Agents.AI" Version="1.22.0" />
+    <PackageReference Include="Microsoft.Agents.AI" Version="1.25.0" />
   </ItemGroup>
 
   <ItemGroup>

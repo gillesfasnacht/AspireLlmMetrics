@@ -39,7 +39,7 @@ var loki = builder.AddContainer("loki", "grafana/loki", "3.7.8")
 //
 // Tempo repository : https://github.com/grafana/tempo/releases
 //
-var tempo = builder.AddContainer("tempo", "grafana/tempo", "3.0.3")
+var tempo = builder.AddContainer("tempo", "grafana/tempo", "3.0.4")
     .WithBindMount("./config/tempo/tempo-config.yml", "/etc/tempo/tempo-config.yml", isReadOnly: true)
     .WithVolume("tempo-data", "/var/tempo")
     .WithArgs("-config.file=/etc/tempo/tempo-config.yml")
@@ -52,7 +52,7 @@ var tempo = builder.AddContainer("tempo", "grafana/tempo", "3.0.3")
 //
 // Prometheus repository : https://github.com/prometheus/prometheus/releases
 //
-var prometheus = builder.AddContainer("prometheus", "prom/prometheus", "v3.13.2")
+var prometheus = builder.AddContainer("prometheus", "prom/prometheus", "v3.13.4")
     .WithBindMount("./config/prometheus/prometheus.yml", "/etc/prometheus/prometheus.yml", isReadOnly: true)
     .WithVolume("prometheus-data", "/prometheus")
     .WithHttpEndpoint(port: 9090, targetPort: 9090)
@@ -73,7 +73,7 @@ var otelCollector = builder.AddOpenTelemetryCollector("otel-collector", "./confi
 //
 // Grafana repository : https://github.com/grafana/grafana/releases
 //
-var grafana = builder.AddContainer("grafana", "grafana/grafana", "13.2.2")
+var grafana = builder.AddContainer("grafana", "grafana/grafana", "13.2.4")
     .WithBindMount("./config/grafana/grafana.ini", "/etc/grafana/grafana.ini", isReadOnly: true)
     .WithBindMount("./config/grafana/datasource.yml", "/etc/grafana/provisioning/datasources/datasource.yml", isReadOnly: true)
     .WithBindMount("./config/grafana/dashboard.yml", "/etc/grafana/provisioning/dashboards/dashboard.yml", isReadOnly: true)

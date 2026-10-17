@@ -11,7 +11,7 @@ namespace AspireLlmMetrics.AppHost.OpenTelemetryCollector
         private const string DashboardOtlpApiKeyVariableName = "AppHost:OtlpApiKey";
         private const string DashboardOtlpUrlDefaultValue = "http://localhost:18889";
         private const string OTelCollectorImageName = "otel/opentelemetry-collector-contrib";
-        private const string OTelCollectorImageTag = "0.158.0";
+        private const string OTelCollectorImageTag = "0.162.0";
 
         public static IResourceBuilder<OpenTelemetryCollectorResource> AddOpenTelemetryCollector(this IDistributedApplicationBuilder builder, string name, string configFileLocation)
         {
